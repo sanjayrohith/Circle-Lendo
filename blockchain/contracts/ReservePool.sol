@@ -35,6 +35,19 @@ contract ReservePool {
     }
 
     /**
+     * @notice Set the factory address (can only be called by current factory/deployer)
+     * @param _factory Address of the LendingCircleFactory contract
+     */
+    function setFactory(address _factory) external {
+        require(msg.sender == factory, "ReservePool: Only current factory can update");
+        require(_factory != address(0), "ReservePool: Invalid factory address");
+        factory = _factory;
+        emit FactoryUpdated(_factory);
+    }
+
+    event FactoryUpdated(address indexed newFactory);
+
+    /**
      * @notice Verify a lending circle contract
      * @param circle Address of the LendingCircle contract
      */
@@ -63,7 +76,7 @@ contract ReservePool {
         totalDeposited += msg.value;
         currentBalance += msg.value;
         
-        emit Deposit(msg.sender, tx.origin, msg.value);
+        emit Deposit(msg.sender, msg.sender, msg.value);
     }
 
     /**
@@ -104,6 +117,6 @@ contract ReservePool {
         require(verifiedCircles[msg.sender], "ReservePool: Only verified circles can deposit");
         totalDeposited += msg.value;
         currentBalance += msg.value;
-        emit Deposit(msg.sender, tx.origin, msg.value);
+        emit Deposit(msg.sender, msg.sender, msg.value);
     }
 }

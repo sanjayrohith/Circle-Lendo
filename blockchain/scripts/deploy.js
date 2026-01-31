@@ -39,17 +39,21 @@ async function main() {
   console.log("   Base credit score:", baseScore.toString(), "\n");
 
   // ============================================
-  // 2. Deploy ReservePool
+  // 2. Deploy LendingCircleFactory (temporarily, to get address)
   // ============================================
+  // Note: We need factory address for ReservePool, but ReservePool sets factory in constructor
+  // Since ReservePool.sol sets factory = msg.sender, we'll deploy ReservePool first
+  // and then the factory will verify circles when created
+  // Actually, ReservePool doesn't need factory address upfront - it verifies circles via factory
+  // Let's deploy ReservePool first, then Factory
+  
   console.log("2️⃣  Deploying ReservePool...");
   const ReservePool = await hre.ethers.getContractFactory("ReservePool");
   const reservePool = await ReservePool.deploy();
   await reservePool.waitForDeployment();
   const reservePoolAddress = await reservePool.getAddress();
   console.log("✅ ReservePool deployed to:", reservePoolAddress);
-  
-  // Note: ReservePool sets factory in constructor, but we'll update it after factory deployment
-  console.log("   ⚠️  Note: Factory address will be set after factory deployment\n");
+  console.log("   Note: Factory will verify circles when created\n");
 
   // ============================================
   // 3. Deploy LendingCircleFactory
@@ -59,24 +63,14 @@ async function main() {
   const factory = await Factory.deploy(creditRegistryAddress, reservePoolAddress);
   await factory.waitForDeployment();
   const factoryAddress = await factory.getAddress();
-  console.log("✅ LendingCircleFactory deployed to:", factoryAddress, "\n");
+  console.log("✅ LendingCircleFactory deployed to:", factoryAddress);
 
   // ============================================
   // 4. Update ReservePool factory address
   // ============================================
   console.log("4️⃣  Updating ReservePool factory address...");
-  // Note: ReservePool constructor sets factory, but if we need to update it:
-  // We need to check if ReservePool has a setFactory function or if it's set in constructor
-  // For now, the factory is set in ReservePool constructor to msg.sender
-  // Since we deploy ReservePool first, we need to transfer ownership or update
-  // Actually, looking at ReservePool.sol, it sets factory = msg.sender in constructor
-  // So we need to deploy ReservePool AFTER factory, or add a setFactory function
-  // Let's check the actual ReservePool contract...
-  
-  // For this deployment, we'll note that ReservePool needs factory address
-  // In production, you might want to add a setFactory function to ReservePool
-  console.log("   ⚠️  ReservePool factory is set in constructor to deployer");
-  console.log("   ⚠️  For production, consider adding setFactory function\n");
+  await reservePool.setFactory(factoryAddress);
+  console.log("✅ ReservePool factory address updated\n");
 
   // ============================================
   // 5. Verification and Summary
