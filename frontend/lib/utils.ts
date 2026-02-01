@@ -12,19 +12,38 @@ export function formatAddress(address: string): string {
 export function formatEther(value: bigint | string | number): string {
   if (typeof value === "string") {
     const num = parseFloat(value);
+    if (isNaN(num) || !isFinite(num)) {
+      return "0.0000";
+    }
     return num.toFixed(4);
   }
   if (typeof value === "number") {
+    if (isNaN(value) || !isFinite(value)) {
+      return "0.0000";
+    }
     return value.toFixed(4);
   }
   // For bigint, convert to string first
+  if (value === null || value === undefined) {
+    return "0.0000";
+  }
   const str = value.toString();
   const num = parseFloat(str) / 1e18;
+  if (isNaN(num) || !isFinite(num)) {
+    return "0.0000";
+  }
   return num.toFixed(4);
 }
 
 export function parseEther(value: string): bigint {
-  return BigInt(Math.floor(parseFloat(value) * 1e18));
+  const num = parseFloat(value);
+  if (isNaN(num) || !isFinite(num)) {
+    throw new Error(`Invalid number: ${value}`);
+  }
+  if (num < 0) {
+    throw new Error(`Negative value not allowed: ${value}`);
+  }
+  return BigInt(Math.floor(num * 1e18));
 }
 
 export function getCircleStatus(status: number): string {

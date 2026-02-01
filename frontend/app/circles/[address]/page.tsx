@@ -185,7 +185,7 @@ function MakeContributionButton({
         abi={LENDING_CIRCLE_ABI}
         functionName="makeContribution"
         args={[BigInt(month)]}
-        value={parseEther(amount)}
+        value={amount && !isNaN(parseFloat(amount)) ? parseEther(amount) : 0n}
         onSuccess={onSuccess}
         className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
       >

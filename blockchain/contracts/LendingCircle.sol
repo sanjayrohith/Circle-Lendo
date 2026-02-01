@@ -163,7 +163,7 @@ contract LendingCircle {
         uint256 _reservePercentage,
         ExcessDistributionMethod _excessDistributionMethod,
         address _creditRegistry,
-        address _reservePool
+        address payable _reservePool
     ) {
         require(_creator != address(0), "LendingCircle: Invalid creator");
         require(_monthlyContribution > 0, "LendingCircle: Contribution must be greater than 0");

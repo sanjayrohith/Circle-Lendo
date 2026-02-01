@@ -33,7 +33,7 @@ contract LendingCircleFactory {
      * @param _creditRegistry Address of CreditRegistry contract
      * @param _reservePool Address of ReservePool contract
      */
-    constructor(address _creditRegistry, address _reservePool) {
+    constructor(address _creditRegistry, address payable _reservePool) {
         require(_creditRegistry != address(0), "LendingCircleFactory: Invalid credit registry");
         require(_reservePool != address(0), "LendingCircleFactory: Invalid reserve pool");
 
@@ -73,7 +73,7 @@ contract LendingCircleFactory {
             reservePercentage,
             excessDistributionMethod,
             address(creditRegistry),
-            address(reservePool)
+            payable(address(reservePool))
         );
 
         circle = address(newCircle);

@@ -99,12 +99,12 @@ export default function CreateCirclePage() {
   };
 
   const args = [
-    parseEther(formData.monthlyContribution),
-    BigInt(formData.durationInMonths),
-    BigInt(formData.minParticipants),
-    BigInt(formData.maxParticipants),
-    BigInt(formData.reservePercentage),
-    BigInt(formData.excessDistributionMethod),
+    formData.monthlyContribution ? parseEther(formData.monthlyContribution) : 0n,
+    BigInt(formData.durationInMonths || 0),
+    BigInt(formData.minParticipants || 0),
+    BigInt(formData.maxParticipants || 0),
+    BigInt(formData.reservePercentage || 0),
+    BigInt(formData.excessDistributionMethod || 0),
   ];
 
   return (
