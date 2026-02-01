@@ -3,10 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "devDependencies": {
-    "hardhat": "^3.1.5",
     "@nomicfoundation/hardhat-viem": "^3.0.0",
-    "@nomicfoundation/hardhat-ethers": "^3.0.0",
-    "viem": "^2.21.45",
-    "ethers": "^6.13.4"
+    "dotenv": "^16.6.1",
+    "hardhat": "^3.1.5",
+    "viem": "^2.21.45"
   }
 }

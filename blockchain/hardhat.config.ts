@@ -1,5 +1,4 @@
 import "@nomicfoundation/hardhat-viem";
-import "@nomicfoundation/hardhat-ethers";
 import { configVariable, defineConfig } from "hardhat/config";
 
 export default defineConfig({

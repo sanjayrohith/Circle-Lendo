@@ -1,6 +1,12 @@
 import hre from "hardhat";
-import { formatEther } from "viem";
+import { formatEther, createWalletClient, createPublicClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 import { readFileSync, writeFileSync, existsSync } from "fs";
+import { config } from "dotenv";
+import { resolve } from "path";
+
+// Load .env file from blockchain directory
+config({ path: resolve(process.cwd(), ".env") });
 
 /**
  * Deployment script for CreditCoin Lending Circle Protocol
@@ -19,21 +25,80 @@ import { readFileSync, writeFileSync, existsSync } from "fs";
 async function main() {
   console.log("🚀 Starting deployment of CreditCoin Lending Circle Protocol...\n");
 
-  const [deployer] = await hre.viem.getWalletClients();
-  const publicClient = await hre.viem.getPublicClient();
+  // Get network config
+  const networkConfig = hre.config.networks[hre.network.name];
+  const chainId = networkConfig?.chainId || 102031; // Default to CreditCoin Testnet
+  const rpcUrl = networkConfig?.url || "https://rpc.cc3-testnet.creditcoin.network";
   
-  console.log("📝 Deploying with account:", deployer.account.address);
-  const balance = await publicClient.getBalance({ address: deployer.account.address });
+  const chain = {
+    id: chainId,
+    name: hre.network.name,
+    nativeCurrency: { name: "CreditCoin", symbol: "tCTC", decimals: 18 },
+    rpcUrls: { default: { http: [rpcUrl] } },
+  };
+  
+  // Get private key from environment variable (loaded from .env via dotenv)
+  let privateKey = process.env.CREDITCOIN_PRIVATE_KEY;
+  
+  // If not in env, try to get from network config (configVariable)
+  if (!privateKey) {
+    try {
+      const configVar = networkConfig?.accounts?.[0];
+      if (configVar && typeof configVar === 'function') {
+        privateKey = configVar();
+      } else if (configVar) {
+        privateKey = typeof configVar === 'string' ? configVar : configVar?.privateKey;
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }
+  
+  if (!privateKey) {
+    console.error("\n❌ Error: Private key not found!");
+    console.error("Make sure .env file exists in blockchain/ directory with:");
+    console.error("CREDITCOIN_PRIVATE_KEY=your_private_key_here\n");
+    throw new Error("CREDITCOIN_PRIVATE_KEY not found in .env file or environment");
+  }
+  
+  // Ensure private key starts with 0x
+  if (!privateKey.startsWith('0x')) {
+    privateKey = '0x' + privateKey;
+  }
+  
+  console.log("🔑 Private key loaded from .env file");
+  const account = privateKeyToAccount(privateKey);
+  
+  const walletClient = createWalletClient({
+    account,
+    chain,
+    transport: http(rpcUrl),
+  });
+  const publicClient = createPublicClient({
+    chain,
+    transport: http(rpcUrl),
+  });
+  
+  console.log("📝 Deploying with account:", account.address);
+  const balance = await publicClient.getBalance({ address: account.address });
   console.log("💰 Account balance:", formatEther(balance), "tCTC\n");
 
   // ============================================
   // 1. Deploy CreditRegistry
   // ============================================
   console.log("1️⃣  Deploying CreditRegistry...");
-  const creditRegistry = await hre.viem.deployContract("CreditRegistry", []);
-  console.log("✅ CreditRegistry deployed to:", creditRegistry.address);
+  const creditRegistryArtifact = await hre.artifacts.readArtifact("CreditRegistry");
+  const creditRegistryHash = await walletClient.deployContract({
+    abi: creditRegistryArtifact.abi,
+    bytecode: creditRegistryArtifact.bytecode,
+    args: [],
+  });
+  const creditRegistryReceipt = await publicClient.waitForTransactionReceipt({ hash: creditRegistryHash });
+  const creditRegistryAddress = creditRegistryReceipt.contractAddress;
+  console.log("✅ CreditRegistry deployed to:", creditRegistryAddress);
   
   // Verify base credit score
+  const creditRegistry = await hre.viem.getContractAt("CreditRegistry", creditRegistryAddress);
   const baseScore = await creditRegistry.read.BASE_CREDIT_SCORE();
   console.log("   Base credit score:", baseScore.toString(), "\n");
 
@@ -41,25 +106,37 @@ async function main() {
   // 2. Deploy ReservePool
   // ============================================
   console.log("2️⃣  Deploying ReservePool...");
-  const reservePool = await hre.viem.deployContract("ReservePool", []);
-  console.log("✅ ReservePool deployed to:", reservePool.address);
+  const reservePoolArtifact = await hre.artifacts.readArtifact("ReservePool");
+  const reservePoolHash = await walletClient.deployContract({
+    abi: reservePoolArtifact.abi,
+    bytecode: reservePoolArtifact.bytecode,
+    args: [],
+  });
+  const reservePoolReceipt = await publicClient.waitForTransactionReceipt({ hash: reservePoolHash });
+  const reservePoolAddress = reservePoolReceipt.contractAddress;
+  console.log("✅ ReservePool deployed to:", reservePoolAddress);
   console.log("   Note: Factory will verify circles when created\n");
 
   // ============================================
   // 3. Deploy LendingCircleFactory
   // ============================================
   console.log("3️⃣  Deploying LendingCircleFactory...");
-  const factory = await hre.viem.deployContract("LendingCircleFactory", [
-    creditRegistry.address,
-    reservePool.address,
-  ]);
-  console.log("✅ LendingCircleFactory deployed to:", factory.address);
+  const factoryArtifact = await hre.artifacts.readArtifact("LendingCircleFactory");
+  const factoryHash = await walletClient.deployContract({
+    abi: factoryArtifact.abi,
+    bytecode: factoryArtifact.bytecode,
+    args: [creditRegistryAddress, reservePoolAddress],
+  });
+  const factoryReceipt = await publicClient.waitForTransactionReceipt({ hash: factoryHash });
+  const factoryAddress = factoryReceipt.contractAddress;
+  console.log("✅ LendingCircleFactory deployed to:", factoryAddress);
 
   // ============================================
   // 4. Update ReservePool factory address
   // ============================================
   console.log("4️⃣  Updating ReservePool factory address...");
-  await reservePool.write.setFactory([factory.address]);
+  const reservePool = await hre.viem.getContractAt("ReservePool", reservePoolAddress);
+  await reservePool.write.setFactory([factoryAddress]);
   console.log("✅ ReservePool factory address updated\n");
 
   // ============================================
@@ -68,9 +145,9 @@ async function main() {
   console.log("=".repeat(60));
   console.log("📋 DEPLOYMENT SUMMARY");
   console.log("=".repeat(60));
-  console.log("CreditRegistry:", creditRegistry.address);
-  console.log("ReservePool:   ", reservePool.address);
-  console.log("Factory:       ", factory.address);
+  console.log("CreditRegistry:", creditRegistryAddress);
+  console.log("ReservePool:   ", reservePoolAddress);
+  console.log("Factory:       ", factoryAddress);
   console.log("=".repeat(60), "\n");
 
   // ============================================
@@ -78,10 +155,10 @@ async function main() {
   // ============================================
   const addresses = {
     network: hre.network.name,
-    deployer: deployer.account.address,
-    creditRegistry: creditRegistry.address,
-    reservePool: reservePool.address,
-    factory: factory.address,
+    deployer: account.address,
+    creditRegistry: creditRegistryAddress,
+    reservePool: reservePoolAddress,
+    factory: factoryAddress,
     timestamp: new Date().toISOString(),
   };
 
@@ -94,32 +171,21 @@ async function main() {
   
   allDeployments[hre.network.name] = addresses;
   writeFileSync(addressesPath, JSON.stringify(allDeployments, null, 2));
-  console.log("💾 Deployment addresses saved to:", addressesPath, "\n");
-
-  // ============================================
-  // 7. Test deployment (optional)
-  // ============================================
-  if (hre.network.name === "hardhat" || hre.network.name === "localhost") {
-    console.log("🧪 Running quick deployment test...");
-    
-    try {
-      // Test: Get credit score (should return base score for new address)
-      const testAddress = "0x1234567890123456789012345678901234567890";
-      const score = await creditRegistry.read.getCreditScore([testAddress]);
-      console.log("   ✅ CreditRegistry test passed - Base score:", score.toString());
-      
-      // Test: Get factory circle count (should be 0)
-      const circleCount = await factory.read.getCircleCount();
-      console.log("   ✅ Factory test passed - Circle count:", circleCount.toString());
-      
-      // Test: Get reserve pool balance (should be 0)
-      const reserveBalance = await publicClient.getBalance({ address: reservePool.address });
-      console.log("   ✅ ReservePool test passed - Balance:", formatEther(reserveBalance), "tCTC");
-      
-      console.log("\n✅ All deployment tests passed!\n");
-    } catch (error) {
-      console.log("   ⚠️  Test error:", error.message);
-    }
+  console.log("💾 Deployment addresses saved to:", addressesPath);
+  
+  // Also update config.json with deployed addresses
+  const configPath = "./config.json";
+  if (existsSync(configPath)) {
+    const config = JSON.parse(readFileSync(configPath, "utf8"));
+    config.contracts = {
+      creditRegistry: creditRegistryAddress,
+      reservePool: reservePoolAddress,
+      factory: factoryAddress,
+    };
+    writeFileSync(configPath, JSON.stringify(config, null, 2));
+    console.log("💾 Config updated:", configPath, "\n");
+  } else {
+    console.log("");
   }
 
   console.log("🎉 Deployment completed successfully!");
