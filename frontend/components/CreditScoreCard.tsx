@@ -11,16 +11,16 @@ export function CreditScoreCard() {
 
   if (!address) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-gray-500">Connect wallet to view credit score</p>
+      <div className="rounded-2xl border border-slate-200/70 bg-white/80 p-6">
+        <p className="text-sm text-slate-500">Connect wallet to view credit score.</p>
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-gray-900">Loading credit score...</p>
+      <div className="rounded-2xl border border-slate-200/70 bg-white/80 p-6">
+        <p className="text-sm text-slate-600">Loading credit score...</p>
       </div>
     );
   }
@@ -41,60 +41,69 @@ export function CreditScoreCard() {
   const progressWidth = Math.min((creditScore / visualScale) * 100, 100);
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-4 text-gray-900">Credit Score</h2>
-      <div className="flex items-center gap-4 mb-6">
-        <div className={`text-6xl font-bold ${scoreColor}`}>{creditScore}</div>
-        <div className="flex-1">
-          <div className="w-full bg-gray-200 rounded-full h-4">
+    <div className="rounded-2xl border border-slate-200/70 bg-white/80 p-6">
+      <div className="flex items-start justify-between mb-5">
+        <div>
+          <h2 className="headline-font text-xl font-semibold text-slate-900">Credit Score</h2>
+          <p className="text-sm text-slate-500">
+            Baseline {BASE_CREDIT_SCORE} · Updates with each payment
+          </p>
+        </div>
+        <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+          Live
+        </span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-5 mb-6">
+        <div className={`text-5xl font-semibold ${scoreColor}`}>{creditScore}</div>
+        <div className="flex-1 min-w-[180px]">
+          <div className="w-full rounded-full bg-slate-100 h-3 overflow-hidden">
             <div
-              className={`h-4 rounded-full ${
+              className={`h-3 rounded-full ${
                 creditScore >= 700
-                  ? "bg-green-600"
+                  ? "bg-gradient-to-r from-emerald-500 to-emerald-400"
                   : creditScore >= 500
-                  ? "bg-yellow-600"
+                  ? "bg-gradient-to-r from-amber-400 to-amber-300"
                   : creditScore >= 300
-                  ? "bg-orange-600"
-                  : "bg-red-600"
+                  ? "bg-gradient-to-r from-orange-500 to-orange-400"
+                  : "bg-gradient-to-r from-rose-500 to-rose-400"
               }`}
               style={{ width: `${progressWidth}%` }}
             />
           </div>
-          <p className="text-sm text-gray-500 mt-1">
-            Credit Score: {creditScore} points
-          </p>
+          <p className="text-xs text-slate-500 mt-2">Score strength: {creditScore} points</p>
         </div>
       </div>
 
       {profile && (
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-gray-500">Circles Joined</p>
-            <p className="font-semibold text-gray-900">{profile.circlesJoined}</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Circles joined</p>
+            <p className="font-semibold text-slate-900 mt-2">{profile.circlesJoined}</p>
           </div>
           <div>
-            <p className="text-gray-500">Circles Completed</p>
-            <p className="font-semibold text-gray-900">{profile.circlesCompleted}</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Circles completed</p>
+            <p className="font-semibold text-slate-900 mt-2">{profile.circlesCompleted}</p>
           </div>
           <div>
-            <p className="text-gray-500">On-Time Payments</p>
-            <p className="font-semibold text-green-600">{profile.onTimePayments}</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">On-time payments</p>
+            <p className="font-semibold text-emerald-600 mt-2">{profile.onTimePayments}</p>
           </div>
           <div>
-            <p className="text-gray-500">Late Payments</p>
-            <p className="font-semibold text-yellow-600">{profile.latePayments}</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Late payments</p>
+            <p className="font-semibold text-amber-500 mt-2">{profile.latePayments}</p>
           </div>
           <div>
-            <p className="text-gray-500">Defaults</p>
-            <p className="font-semibold text-red-600">{profile.defaults}</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Defaults</p>
+            <p className="font-semibold text-rose-500 mt-2">{profile.defaults}</p>
           </div>
           <div>
-            <p className="text-gray-500">Status</p>
-            <p className="font-semibold">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Status</p>
+            <p className="font-semibold mt-2">
               {profile.hasDefaulted ? (
-                <span className="text-red-600">Defaulted</span>
+                <span className="text-rose-500">Defaulted</span>
               ) : (
-                <span className="text-green-600">Active</span>
+                <span className="text-emerald-600">Active</span>
               )}
             </p>
           </div>
