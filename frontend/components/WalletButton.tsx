@@ -99,20 +99,20 @@ export function WalletButton() {
 
   if (isConnected && address) {
     return (
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <div className="text-right">
-          <span className="text-sm font-mono text-gray-900 block">{formatAddress(address)}</span>
-          <span className="text-xs text-gray-500">
+          <span className="text-sm font-mono text-slate-900 block">{formatAddress(address)}</span>
+          <span className="text-xs text-slate-500">
             {chainId === CREDITCOIN_CHAIN.id ? (
-              <span className="text-green-600">✓ {CREDITCOIN_CHAIN.name}</span>
+              <span className="text-emerald-600">✓ {CREDITCOIN_CHAIN.name}</span>
             ) : (
-              <span className="text-red-600">⚠ Wrong Network</span>
+              <span className="text-rose-600">⚠ Wrong Network</span>
             )}
           </span>
         </div>
         <button
           onClick={() => disconnect()}
-          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+          className="px-4 py-2 rounded-full border border-rose-200 text-rose-600 hover:bg-rose-50 transition"
         >
           Disconnect
         </button>
@@ -127,7 +127,7 @@ export function WalletButton() {
           key={connector.id}
           onClick={() => handleConnect(connector)}
           disabled={isPending}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition disabled:opacity-50"
+          className="px-4 py-2 rounded-full bg-slate-900 text-white shadow-sm hover:bg-slate-800 transition disabled:opacity-50"
         >
           {isPending ? "Connecting..." : `Connect ${connector.name}`}
         </button>
